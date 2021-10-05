@@ -271,9 +271,9 @@ let composer, effectFXAA, outlinePass;
 
 let selectedObjects = [];
 
-const axes = new THREE.AxesHelper(50); // 坐标系辅助工具 ,添加到scene即可
 
-const raycaster = new THREE.Raycaster();
+const axes = new THREE.AxesHelper(50); // 坐标系辅助工具 ,添加到scene即可
+const raycaster = new THREE.Raycaster(); //射线选择
 const mouse = new THREE.Vector2();
 
 const obj3d = new THREE.Object3D();
@@ -296,6 +296,50 @@ gui.add(params,"test").name("选中的物体:").listen();
 
 init();
 animate();
+
+
+
+/** 放置虚线框区域和库区名称 */
+function addArea(x,z,width,length,scene,name,textColor,font_size) {
+  var  planeMat = new THREE.MeshLambertMaterial();
+  new THREE.TextureLoader().load( '/images/plane.png', function( map ) {
+    planeMat.map = map;
+    planeMat.transparent = true;
+    planeMat.opacity = 0.8;
+    planeMat.needsUpdate = true;
+} );
+
+  var geometry = new THREE.PlaneGeometry( width, length );
+  var obj = new THREE.Mesh( geometry, planeMat );
+  obj.position.set(x,0.01,z);
+  obj.rotation.x = -Math.PI / 2.0;
+  obj.name = "库区"+"$"+name.split("$")[1];
+  scene.add( obj );
+
+  new THREE.FontLoader().load('/font/FZYaoTi_Regular.json',function(font){
+    
+    var text= new THREE.TextGeometry(name.split("$")[1],{
+        // 设定文字字体
+        font:font,
+        //尺寸
+        size:font_size,
+        //厚度
+        height:0.01
+    });
+    text.computeBoundingBox();
+    //3D文字材质
+    var m = new THREE.MeshStandardMaterial({color:"#" + textColor});
+    var mesh = new THREE.Mesh(text,m)
+    mesh.position.x = -10;
+    mesh.position.y = 0.01;
+    mesh.position.z = 5;
+    mesh.rotation.x = -Math.PI / 2.0; //立体/平面
+    scene.add(mesh);
+});
+
+}
+
+
 
 function init() {
   container = document.createElement("div");
@@ -383,6 +427,8 @@ function init() {
   //
   scene.add(group);
 
+
+  addArea(0,0,20,10,group,"ID1$库区1号","FF0000",0.5); //区域
   // box ==========================================================
 
   const cubeGeo = new THREE.BoxBufferGeometry(0.5, 0.3, 0.5);
