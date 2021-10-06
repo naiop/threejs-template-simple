@@ -24,3 +24,13 @@ body
     line-height: 1;
     border-radius: 5px;
   }
+
+  #info {
+	position: absolute;
+	top: 0px;
+	width: 100%;
+	padding: 10px;
+	box-sizing: border-box;
+	text-align: center;
+	z-index: 1; /* TODO Solve this in HTML */
+}
