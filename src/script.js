@@ -63,7 +63,7 @@ function addArea(x, z, width, length, scene, name, textColor, font_size) {
   obj.name = "库区" + "$" + name.split("$")[1];
   scene.add(obj);
 
-  new THREE.FontLoader().load("/font/FZYaoTi_Regular.json", function (font) {
+  new THREE.FontLoader().load("font/FZYaoTi_Regular.json", function (font) {
     var text = new THREE.TextGeometry(name.split("$")[1], {
       // 设定文字字体
       font: font,
