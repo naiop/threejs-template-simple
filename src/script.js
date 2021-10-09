@@ -49,7 +49,7 @@ animate();
 /** 放置虚线框区域和库区名称 */
 function addArea(x, z, width, length, scene, name, textColor, font_size) {
   var planeMat = new THREE.MeshLambertMaterial();
-  new THREE.TextureLoader().load("/images/plane.png", function (map) {
+  new THREE.TextureLoader().load("images/plane.png", function (map) {
     planeMat.map = map;
     planeMat.transparent = true;
     planeMat.opacity = 0.8;
@@ -199,7 +199,7 @@ function init() {
   const cubeGeo = new THREE.BoxBufferGeometry(0.5, 0.3, 0.5);
   const cubeMaterial = new THREE.MeshLambertMaterial({
     color: 0xfeb74c,
-    map: new THREE.TextureLoader().load("/images/box.png"),
+    map: new THREE.TextureLoader().load("images/box.png"),
   });
   const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
   voxel.position.set(-1.65, 1.2, 0);
@@ -308,7 +308,7 @@ function init() {
   composer.addPass(outlinePass);
 
   const textureLoader = new THREE.TextureLoader();
-  textureLoader.load("/images/tri_pattern.jpg", function (texture) {
+  textureLoader.load("images/tri_pattern.jpg", function (texture) {
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     outlinePass.patternTexture = texture;
