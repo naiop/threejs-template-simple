@@ -15,6 +15,8 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 
+//import snowTexture from '../static/images/snow.png';
+
 let container, stats;
 let camera, scene, renderer, controls;
 let composer, effectFXAA, outlinePass;
@@ -27,6 +29,8 @@ const mouse = new THREE.Vector2();
 
 const obj3d = new THREE.Object3D();
 const group = new THREE.Group();
+
+var points = []; //雪花
 
 const params = {
   test: "货物",
@@ -120,8 +124,8 @@ function init() {
 
   skybox(); //天空盒
 
-  camera = new THREE.PerspectiveCamera(45, width / height, 0.1 , 1000);
-  camera.position.set( 5, 0, 12 );
+  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.set(5, 0, 12);
 
   //controls
   controls = new OrbitControls(camera, renderer.domElement);
@@ -186,6 +190,8 @@ function init() {
     mesh.name = "货架";
     group.add(mesh);
   });
+  // 
+
 
   //
   scene.add(group);
@@ -270,6 +276,37 @@ function init() {
   group.add(voxel17);
 
   // box ==========================================================
+
+  // 雪花贴图
+  //let texture = new THREE.TextureLoader().load(images/snow.png);
+  var geometry = new THREE.Geometry(); //如果有人仍然想使用Geometry，那么在使用cdn时在版本声明中使用r122。  "three": "^0.130.1",
+  let range = 100;
+  let pointsMaterial = new THREE.PointsMaterial({
+    size: 1,
+    transparent: true,
+    opacity: 0.8,
+    map: new THREE.TextureLoader().load("images/snow.png"),
+    // 背景融合
+    blending: THREE.AdditiveBlending,
+    // 景深衰弱
+    sizeAttenuation: true,
+    depthTest: false
+  });
+  for (let i = 0; i < 1500; i++) {
+    let vertice = new THREE.Vector3(Math.random() * range - range / 2, Math.random() * range * 1.5, Math.random() * range - range / 2);
+    // 纵向移速
+    vertice.velocityY = 0.1 + Math.random() / 3;
+    // 横向移速
+    vertice.velocityX = (Math.random() - 0.5) / 3;
+    // 加入到几何
+    geometry.vertices.push(vertice);
+  }
+  geometry.center();
+  points = new THREE.Points(geometry, pointsMaterial);
+  points.position.y = -30;
+  scene.add(points);
+
+
 
   const groundGeo = new THREE.PlaneGeometry(50, 50);
   const groundMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -404,6 +441,16 @@ function onWindowResize() {
 
 function animate() {
   requestAnimationFrame(animate);
+  // 顶点变动之后需要更新，否则无法实现雨滴特效
+  points.geometry.verticesNeedUpdate = true;
+  // 雪花动画更新
+  let vertices = points.geometry.vertices;
+  vertices.forEach(function (v) {
+    v.y = v.y - (v.velocityY);
+    v.x = v.x - (v.velocityX);
+    if (v.y <= 0) v.y = 60;
+    if (v.x <= -20 || v.x >= 20) v.velocityX = v.velocityX * -1;
+  });
 
   stats.begin();
 
