@@ -14,6 +14,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+var echarts = require('echarts');
 
 //import snowTexture from '../static/images/snow.png';
 
@@ -139,7 +140,7 @@ function init() {
   controls.minDistance = 5;
   controls.maxDistance = 20;
   controls.maxPolarAngle = Math.PI * 0.4; //最大角度 地平面与camera
-  controls.enablePan = false;
+  controls.enablePan = true;
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
@@ -326,7 +327,7 @@ function init() {
   ground.name = "地板";
   group.add(ground);
 
-
+  initEcharts();
   // car-------------------------------------------
   //公共的材质
   const m = new THREE.MeshNormalMaterial()
@@ -806,4 +807,64 @@ function animate() {
   composer.render();
 
   stats.end();
+}
+
+
+function initEcharts(){
+  var pieChart = echarts.init(document.getElementById('c'));
+  
+  var option = {
+      color: ['#3398DB'],
+      tooltip : {
+          trigger: 'axis',
+          axisPointer : {
+              type : 'shadow'
+          }
+      },
+      grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+      },
+      xAxis : [
+          {
+              type : 'category',
+              data : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+              axisTick: {
+                  alignWithLabel: true
+              }
+          }
+      ],
+      yAxis : [
+          {
+              type : 'value'
+          }
+      ],
+      series : [
+          {
+              name:'直接访问',
+              type:'bar',
+              barWidth: '60%',
+              data:[100, 52, 200, 334, 67, 330, 220]
+          }
+      ]
+  };
+  pieChart.setOption(option);
+
+  console.log(pieChart)
+  pieChart.on('finished', function () {
+    var infoEchart = new THREE.TextureLoader().load( pieChart.getDataURL() );
+
+    var infoEchartMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      map: infoEchart,
+      side: THREE.DoubleSide
+    });
+   
+    var echartPlane = new THREE.Mesh(new THREE.PlaneGeometry(5,3),infoEchartMaterial);
+    echartPlane.position.set(0, 5, 0);
+    scene.add(echartPlane);
+
+  });
 }
