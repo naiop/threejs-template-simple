@@ -2,8 +2,8 @@
 
 ## Links
 
-- [GitHub](https://github.com/naiop/threejs-template-simple)
-- [Live](https://naiop.github.io/threejs-template-simple/)
+- [仓库地址](https://github.com/naiop/threejs-template-simple)
+- [在线预览](https://naiop.github.io/threejs-template-simple/)
 
 ## Setup
 Download [Node.js](https://nodejs.org/en/download/).
