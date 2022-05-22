@@ -26,13 +26,14 @@ body
   }
 
   #info {
-	position: absolute;
+	
 	top: 0px;
 	width: 100%;
 	padding: 10px;
 	box-sizing: border-box;
 	text-align: center;
-	 /* z-index: 1;   TODO Solve this in HTML */
+    position: fixed;
+	  z-index: 1;
 }
 
 #button {
