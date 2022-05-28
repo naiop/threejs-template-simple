@@ -1,0 +1,2 @@
+(()=>{"use strict";const e=document.createElement("h2");e.innerText="关于我234567",document.getElementById("app").appendChild(e),console.log("about"),console.log("123")})();
+//# sourceMappingURL=bundle.2e5d20d6368ec0903046.js.map
