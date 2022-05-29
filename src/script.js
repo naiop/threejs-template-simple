@@ -12,7 +12,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import snowTexture from '../static/images/snow.png'; //图片资源导入
-var echarts = require('echarts'); //导入图标
+var echarts = require('echarts'); //导入 echarts
 
 import * as Ammo from './builds/ammo';
 import {
@@ -25,8 +25,14 @@ import {
   isTouchscreenDevice,
   touchEvent,
   createJoystick,
-} from './utils/eventHandlers';
-
+} from './utils/eventHandlers'; //event
+import {
+  simpleText,
+  floatingLabel,
+  allSkillsSection,
+  createTextOnPlane,
+  loadText,
+} from './utils/surfaces';
 export let  camera, scene, renderer, controls ,light;  // 相机，场景，渲染器，控制，灯光
 const group = new THREE.Group(); //组
 const clock = new THREE.Clock(); //时钟，定时刷新
@@ -55,7 +61,7 @@ let selectedObjects = []; //选中的物体
 const mouse = new THREE.Vector2();
 const obj3d = new THREE.Object3D();  //加载obj 模型
 
-let manager = new THREE.LoadingManager();
+export let manager = new THREE.LoadingManager();
 
 /*
  2022.5.22  Add Ammo
@@ -68,7 +74,7 @@ export let cursorHoverObjects = [];
 initMain();
 animate();
 ammoMian();
-initPhysics();
+//initPhysics();
 
 function initPhysics() {
   // start Ammo Engine
@@ -390,6 +396,83 @@ function ammoMian(){
       physicsWorld.addRigidBody(body);
     }
 
+    // 创建盒子
+    function createDropBox() {
+
+      let mass = 3;
+      let radius = 2;
+      var pos = new THREE.Vector3();
+      var quat = new THREE.Quaternion();
+      
+
+      for (var i = 0; i < 888; i++) {
+        pos.set(Math.random(), 2 *i, Math.random());
+        quat.set(0, 0, 0, 2);
+
+        var color = Math.floor(Math.random() * (1 << 24));// 生成随机颜色材质
+        const material = new THREE.MeshPhongMaterial({ color: color });
+ 
+     // var threeObject = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1, 2, 2, 2), material); //Mesh
+
+        //threeJS Section
+       let threeObject = (ballObject = new THREE.Mesh(
+         new THREE.BoxGeometry(1, 1, 1, 2, 2, 2), material
+       ));
+
+
+       // threeObject.geometry.computeBoundingSphere();
+       // threeObject.geometry.computeBoundingBox();
+
+       // threeObject.position.set(pos.x, pos.y, pos.z);
+
+        threeObject.castShadow = true;
+        threeObject.receiveShadow = true;
+
+        scene.add(threeObject);
+
+
+       //Ammojs 部分
+      let transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+      transform.setRotation(
+        new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w)
+      );
+      let motionState = new Ammo.btDefaultMotionState(transform);
+
+      let colShape = new Ammo.btSphereShape(radius);
+      colShape.setMargin(0.05);
+
+      let localInertia = new Ammo.btVector3(0, 0, 0);
+      colShape.calculateLocalInertia(mass, localInertia);
+
+      let rbInfo = new Ammo.btRigidBodyConstructionInfo(
+        mass,
+        motionState,
+        colShape,
+        localInertia
+      );
+      let body = new Ammo.btRigidBody(rbInfo);
+      //body.setFriction(4); //设置摩擦力
+      body.setRollingFriction(10);
+
+      //set ball friction
+
+      //once state is set to disable, dynamic interaction no longer calculated
+      body.setActivationState(STATE.DISABLE_DEACTIVATION);
+
+      physicsWorld.addRigidBody(
+        body //collisionGroupRedBall, collisionGroupGreenBall | collisionGroupPlane
+      );
+
+      threeObject.userData.physicsBody = body;
+      ballObject.userData.physicsBody = body;
+
+      rigidBodies.push(threeObject);
+      rigidBodies.push(ballObject);
+     }      
+    }
+
     // 创建求
     function createBall() {
       let pos = { x: 8.75, y: 0, z: 0 };
@@ -456,11 +539,94 @@ function ammoMian(){
 
       ball.userData.physicsBody = body;
       ballObject.userData.physicsBody = body;
-      console.log(ball);
-      console.log(ballObject);
+      //console.log(ball);
+      //console.log(ballObject);
       rigidBodies.push(ball);
       rigidBodies.push(ballObject);
     }
+
+     // 移动求
+    function moveBall() {
+    let scalingFactor = 20;
+    let moveX = moveDirection.right - moveDirection.left;
+    let moveZ = moveDirection.back - moveDirection.forward;
+    let moveY = 0;
+
+    if (ballObject.position.y < 2.01) {
+      moveX = moveDirection.right - moveDirection.left;
+      moveZ = moveDirection.back - moveDirection.forward;
+      moveY = 0;
+    } else {
+      moveX = moveDirection.right - moveDirection.left;
+      moveZ = moveDirection.back - moveDirection.forward;
+      moveY = -0.25;
+    }
+
+    // no movement
+    if (moveX == 0 && moveY == 0 && moveZ == 0) return;
+
+    let resultantImpulse = new Ammo.btVector3(moveX, moveY, moveZ);
+    resultantImpulse.op_mul(scalingFactor);
+    let physicsBody = ballObject.userData.physicsBody;
+    physicsBody.setLinearVelocity(resultantImpulse);
+    }
+
+    //创建沙滩球网格
+    function createBeachBall() {
+    let pos = { x: 20, y: 30, z: 0 };
+    let radius = 2;
+    let quat = { x: 0, y: 0, z: 0, w: 1 };
+    let mass = 20;
+
+    //import beach ball texture
+    var texture_loader = new THREE.TextureLoader(manager);
+    var beachTexture = texture_loader.load('images/BeachBallColor.jpg');
+    beachTexture.wrapS = beachTexture.wrapT = THREE.RepeatWrapping;
+    beachTexture.repeat.set(1, 1);
+    beachTexture.anisotropy = 1;
+    beachTexture.encoding = THREE.sRGBEncoding;
+
+    //threeJS Section
+    let ball = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 32, 32),
+      new THREE.MeshLambertMaterial({ map: beachTexture })
+    );
+
+    ball.position.set(pos.x, pos.y, pos.z);
+    ball.castShadow = true;
+    ball.receiveShadow = true;
+    scene.add(ball);
+
+    //Ammojs Section
+    let transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+    transform.setRotation(
+      new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w)
+    );
+    let motionState = new Ammo.btDefaultMotionState(transform);
+
+    let colShape = new Ammo.btSphereShape(radius);
+    colShape.setMargin(0.05);
+
+    let localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+
+    let rbInfo = new Ammo.btRigidBodyConstructionInfo(
+      mass,
+      motionState,
+      colShape,
+      localInertia
+    );
+    let body = new Ammo.btRigidBody(rbInfo);
+
+    body.setRollingFriction(1);
+    physicsWorld.addRigidBody(body);
+
+    ball.userData.physicsBody = body;
+    rigidBodies.push(ball);
+    }
+
      //create X axis wall around entire plane
     function createWallX(x, y, z) {
     const wallScale = { x: 0.125, y: 4, z: 175 };
@@ -510,7 +676,7 @@ function ammoMian(){
     }
 
     //创建公告牌的函数
-  function createBillboard(
+    function createBillboard(
     x,
     y,
     z,
@@ -589,9 +755,69 @@ function ammoMian(){
     addRigidPhysics(billboardPole, billboardPoleScale);
 
     cursorHoverObjects.push(billboardSign);
+    }
+
+      //create link boxes
+  function createBox(
+    x,
+    y,
+    z,
+    scaleX,
+    scaleY,
+    scaleZ,
+    boxTexture,
+    URLLink,
+    color = 0x000000,
+    transparent = true
+  ) {
+    const boxScale = { x: scaleX, y: scaleY, z: scaleZ };
+    let quat = { x: 0, y: 0, z: 0, w: 1 };
+    let mass = 0; //mass of zero = infinite mass
+
+    //load link logo
+    const loader = new THREE.TextureLoader(manager);
+    const texture = loader.load(boxTexture);
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.encoding = THREE.sRGBEncoding;
+    const loadedTexture = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: transparent,
+      color: 0xffffff,
+    });
+
+    var borderMaterial = new THREE.MeshBasicMaterial({
+      color: color,
+    });
+    borderMaterial.color.convertSRGBToLinear();
+
+    var materials = [
+      borderMaterial, // Left side
+      borderMaterial, // Right side
+      borderMaterial, // Top side   ---> THIS IS THE FRONT
+      borderMaterial, // Bottom side --> THIS IS THE BACK
+      loadedTexture, // Front side
+      borderMaterial, // Back side
+    ];
+
+    const linkBox = new THREE.Mesh(
+      new THREE.BoxBufferGeometry(boxScale.x, boxScale.y, boxScale.z),
+      materials
+    );
+    linkBox.position.set(x, y, z);
+    linkBox.renderOrder = 1;
+    linkBox.castShadow = true;
+    linkBox.receiveShadow = true;
+    linkBox.userData = { URL: URLLink, email: URLLink };
+    scene.add(linkBox);
+    objectsWithLinks.push(linkBox.uuid);
+
+    addRigidPhysics(linkBox, boxScale);
+
+    cursorHoverObjects.push(linkBox);
   }
 
-  //create brick wall  1111
+  //create 砖墙   1111
   function wallOfBricks() {
     const loader = new THREE.TextureLoader(manager);
     var pos = new THREE.Vector3();
@@ -649,7 +875,7 @@ function ammoMian(){
       pos.y += brickHeight;
     }
   }
-  //helper function to create individual brick mesh  2222
+  //用于创建单个砖网格的辅助函数  2222
   function createBrick(sx, sy, sz, mass, pos, quat, material) {
     var threeObject = new THREE.Mesh(
       new THREE.BoxBufferGeometry(sx, sy, sz, 1, 1, 1),
@@ -702,32 +928,29 @@ function ammoMian(){
     physicsWorld.addRigidBody(body);
   }
 
-  // 移动求
-  function moveBall() {
-    let scalingFactor = 20;
-    let moveX = moveDirection.right - moveDirection.left;
-    let moveZ = moveDirection.back - moveDirection.forward;
-    let moveY = 0;
+ 
 
-    if (ballObject.position.y < 2.01) {
-      moveX = moveDirection.right - moveDirection.left;
-      moveZ = moveDirection.back - moveDirection.forward;
-      moveY = 0;
-    } else {
-      moveX = moveDirection.right - moveDirection.left;
-      moveZ = moveDirection.back - moveDirection.forward;
-      moveY = -0.25;
-    }
+  //create Ammo.js body to ->loadText()
+  function ryanFloydWords(x, y, z) {
+    const boxScale = { x: 46, y: 3, z: 2 };
+    let quat = { x: 0, y: 0, z: 0, w: 1 };
+    let mass = 0; //mass of zero = infinite mass
 
-    // no movement
-    if (moveX == 0 && moveY == 0 && moveZ == 0) return;
+    const linkBox = new THREE.Mesh(
+      new THREE.BoxBufferGeometry(boxScale.x, boxScale.y, boxScale.z),
+      new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+      })
+    );
 
-    let resultantImpulse = new Ammo.btVector3(moveX, moveY, moveZ);
-    resultantImpulse.op_mul(scalingFactor);
-    let physicsBody = ballObject.userData.physicsBody;
-    physicsBody.setLinearVelocity(resultantImpulse);
+    linkBox.position.set(x, y, z);
+    linkBox.castShadow = true;
+    linkBox.receiveShadow = true;
+    objectsWithLinks.push(linkBox.uuid);
+
+    addRigidPhysics(linkBox, boxScale);
   }
-
+  
 
 
   function winClick(){
@@ -805,9 +1028,10 @@ function ammoMian(){
     function start() {
       
       createPhysicsWorld();
-  
+      createDropBox();
       createGridPlane(); //地面
       createBall(); //球ball
+      createBeachBall(); //求
 
       //围墙
     createWallX(87.5, 1.75, 0);
@@ -831,7 +1055,35 @@ function ammoMian(){
       'https://camo.githubusercontent.com/8baab1ab51177df75eeb87a382814bde24266d0ee1c5ff2055f0075d49437737/68747470733a2f2f6769746875622d726561646d652d73746174732e76657263656c2e6170702f6170693f757365726e616d653d6e61696f7026686964655f7469746c653d7472756526686964655f626f726465723d747275652673686f775f69636f6e733d7472756526696e636c7564655f616c6c5f636f6d6d6974733d74727565266c696e655f6865696768743d32312662675f636f6c6f723d302c4543364336432c4646443437392c4646464337392c373346413739267468656d653d677261797768697465266c6f63616c653d636e',
       Math.PI * 0.17
     );
+    createBillboard(
+      -17,
+      1.25,
+      -75,
+      'images/terpSolutions1.png',
+      'https://camo.githubusercontent.com/8baab1ab51177df75eeb87a382814bde24266d0ee1c5ff2055f0075d49437737/68747470733a2f2f6769746875622d726561646d652d73746174732e76657263656c2e6170702f6170693f757365726e616d653d6e61696f7026686964655f7469746c653d7472756526686964655f626f726465723d747275652673686f775f69636f6e733d7472756526696e636c7564655f616c6c5f636f6d6d6974733d74727565266c696e655f6865696768743d32312662675f636f6c6f723d302c4543364336432c4646443437392c4646464337392c373346413739267468656d653d677261797768697465266c6f63616c653d636e',
+      Math.PI * 0.15
+    );
+
+    createBox(
+      12,
+      2,
+      -70,
+      4,
+      4,
+      1,
+      'images/terpSolutions.png',
+      'https://github.com/naiop',
+     0x000000,
+      true
+    );
+
       wallOfBricks(); //砖墙
+      simpleText(-50, 0.01, -5, 'SKILLS', 3);// 字体
+      floatingLabel(11.875, 4.5, -70, 'Github'); // 字体
+      allSkillsSection(-50, 0.025, 20, 40, 40, 'images/imgFont.png'); //字体
+      createTextOnPlane(-70, 0.01, -48, 'images/imgFont.png', 20, 40);  //字体
+      loadText(); //字体
+      ryanFloydWords(11.2, 1, -20); //loadText(); //字体 //ammo
       winClick();
       setupEventHandlers();
       renderFrame();
@@ -850,7 +1102,7 @@ function ammoMian(){
   initCamera();//初始化相机
   initRenender();//初始化渲染器
   initLight();//初始化光线
-  initOthers();//初始化其他参数
+  initOthers();//初始化其他参数addArea
   ininControl(); //初始化控制
   onWindowResize(); //窗体的设置
   initGUI();  //GUI
@@ -863,7 +1115,7 @@ function ammoMian(){
   Box(); // 货物
   Geometrycar(); //车
   addArea(0, 0, 20, 10, scene, "ID1$库区1号", "FF0000", 0.5); //库区域
-  snowflake(); //雪花
+  //snowflake(); //雪花
   initEcharts(); //echarts
   //setEventsMouse(); //鼠标事件
   }
@@ -1705,6 +1957,7 @@ function initStats(){
     });
   }
 
+
   // 动画
 function animate() {
   
@@ -1720,14 +1973,14 @@ function animate() {
   renderer.render(scene, camera)
 
   // 顶点变动之后需要更新，否则无法实现落雪特效
-  points.geometry.verticesNeedUpdate = true;
-  let vertices = points.geometry.vertices;// 雪花动画更新
-  vertices.forEach(function (v) {
-    v.y = v.y - (v.velocityY);
-    v.x = v.x - (v.velocityX);
-    if (v.y <= 0) v.y = 60;
-    if (v.x <= -20 || v.x >= 20) v.velocityX = v.velocityX * -1;
-  });
+  // points.geometry.verticesNeedUpdate = true;
+  // let vertices = points.geometry.vertices;// 雪花动画更新
+  // vertices.forEach(function (v) {
+  //   v.y = v.y - (v.velocityY);
+  //   v.x = v.x - (v.velocityX);
+  //   if (v.y <= 0) v.y = 60;
+  //   if (v.x <= -20 || v.x >= 20) v.velocityX = v.velocityX * -1;
+  // });
 
   //car 
   frontWheels.rotation.x = elapsedTime
@@ -1742,6 +1995,7 @@ function animate() {
   if (GUIparams.Rotate) {
     camera.rotation.y = elapsedTime * 0.0001;
   }
+
 
   composer.render(); // 射线类Raycaster 选择物体渲染
 
