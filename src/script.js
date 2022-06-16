@@ -4,6 +4,7 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module.js";  // GUI
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"; // 控制
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js"; //Obj 模型加载库
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { TWEEN } from "three/examples/jsm/libs/tween.module.min.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js"; //STL 模型加载库
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -1111,6 +1112,7 @@ function ammoMian(){
   skybox(); //天空盒
  // Panel(); //地面
   STLModel(); //STL 模型
+  GLBModel();
   outlineSelect(); // 模型轮廓
   Box(); // 货物
   Geometrycar(); //车
@@ -1331,6 +1333,29 @@ function initStats(){
       mesh.name = "货架";
       scene.add(mesh); //网格模型添加到场景中
     });
+  }
+  function GLBModel(){
+    const loader = new GLTFLoader()
+
+      loader.load('models/glbComputer.glb', function(gltf) {
+        console.log(gltf)
+        const mesh = gltf.scene.children[0]
+        console.log(mesh)
+        gltf.scene.traverse( function ( child ) {
+          if ( child.isMesh ) {
+              child.frustumCulled = true;
+              //模型阴影
+              child.castShadow = true;
+              //模型自发光
+              child.material.emissive =  child.material.color;
+              child.material.emissiveMap = child.material.map ;
+          }})
+        mesh.scale.set( 15, 15, 15 );
+        mesh.position.y = 4;
+
+
+        scene.add(mesh)
+      })
   }
 
   //rack box
