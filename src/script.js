@@ -400,26 +400,20 @@ function ammoMian(){
     // 创建盒子
     function createDropBox() {
 
-      let mass = 3;
-      let radius = 2;
+      let mass = 100;
+      let radius = 0.4;
       var pos = new THREE.Vector3();
       var quat = new THREE.Quaternion();
       
 
       for (var i = 0; i < 888; i++) {
-        pos.set(Math.random(), 2 *i, Math.random());
+        pos.set(Math.random(), 2 *i/8, Math.random());
         quat.set(0, 0, 0, 2);
 
         var color = Math.floor(Math.random() * (1 << 24));// 生成随机颜色材质
         const material = new THREE.MeshPhongMaterial({ color: color });
  
-     // var threeObject = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1, 2, 2, 2), material); //Mesh
-
-        //threeJS Section
-       let threeObject = (ballObject = new THREE.Mesh(
-         new THREE.BoxGeometry(1, 1, 1, 2, 2, 2), material
-       ));
-
+        let threeObject = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), material); //Mesh
 
        // threeObject.geometry.computeBoundingSphere();
        // threeObject.geometry.computeBoundingBox();
@@ -455,7 +449,7 @@ function ammoMian(){
       );
       let body = new Ammo.btRigidBody(rbInfo);
       //body.setFriction(4); //设置摩擦力
-      body.setRollingFriction(10);
+      body.setRollingFriction(1); //设置滚动摩擦力
 
       //set ball friction
 
@@ -467,11 +461,9 @@ function ammoMian(){
       );
 
       threeObject.userData.physicsBody = body;
-      ballObject.userData.physicsBody = body;
-
+ 
       rigidBodies.push(threeObject);
-      rigidBodies.push(ballObject);
-     }      
+      }      
     }
 
     // 创建求
@@ -1351,7 +1343,8 @@ function initStats(){
               child.material.emissiveMap = child.material.map ;
           }})
         mesh.scale.set( 15, 15, 15 );
-        mesh.position.y = 4;
+        //mesh.position.y = 4;
+        mesh.position.set(0, 4, -50);
 
 
         scene.add(mesh)
